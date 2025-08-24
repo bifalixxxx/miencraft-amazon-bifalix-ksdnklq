@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amazon Minecraft Shop</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f1f1f1;
+        margin: 0;
+        padding: 0;
+      }
+      header {
+        background-color: #232f3e;
+        color: orange;
+        padding: 1em;
+        text-align: center;
+        font-size: 2em;
+        font-weight: bold;
+      }
+      .search-bar {
+        padding: 1em;
+        text-align: center;
+      }
+      .search-bar input {
+        width: 60%;
+        padding: 0.5em;
+        font-size: 1em;
+      }
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1em;
+        justify-content: center;
+        padding: 1em;
+      }
+      .card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        width: 200px;
+        padding: 1em;
+        text-align: center;
+      }
+      .card img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        margin-bottom: 0.5em;
+      }
+      .card button {
+        margin-top: 0.5em;
+        background-color: orange;
+        border: none;
+        color: white;
+        padding: 0.5em 1em;
+        cursor: pointer;
+      }
+      .footer {
+        text-align: center;
+        padding: 2em;
+      }
+      .nav-links {
+        text-align: center;
+        margin: 1em 0;
+      }
+      .nav-links button {
+        margin: 0 0.5em;
+        padding: 0.5em 1em;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Amazon Minecraft</header>
+
+    <div class="nav-links">
+      <button onclick="showShop()">Accueil</button>
+      <button onclick="showOrders()">Mes commandes</button>
+    </div>
+
+    <div class="search-bar">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Rechercher un item..."
+        onkeyup="filterItems()"
+      />
+    </div>
+
+    <div id="shop" class="container"></div>
+
+    <div id="orders" style="display: none; text-align: center; padding: 1em">
+      <input type="text" id="pseudoInput" placeholder="Ton pseudo Minecraft" />
+      <button onclick="checkOrders()">Voir mes commandes</button>
+      <div id="orderResults"></div>
+    </div>
+
+    <script>
+      const stockURL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vShAtOr9RXHZ95BYlKngeR7WaGTyf6rUfoqmFJWKykCLGN4o8qNjdfBv2DbWbtNa2JP1FBYZ8y0zjuy/pub?gid=686696441&single=true&output=csv";
+      const commandesURL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vSG0ljsjjIa9EV2AD-7cT3oBBXkAq0pQwoiClvlf475FmqDIiBMM2ZRTVwSuCW9dulBnBmTGYer-afY/pub?gid=0&single=true&output=csv";
+      const statutURL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyMuN2QeVjkvrmXSCdO-p7MgdYbaXfz-TjgMHfq4AZor_odZYIguHp2BzGu3w5-fek7JwlCeIWc7yM/pub?gid=0&single=true&output=csv";
+      const webhook =
+        "https://discord.com/api/webhooks/1409195009596588052/aoF_o1wJjPM2-qMAeOcfgEE7csEOxYVhZhOipE_e5rIfLFBau3Oq2MpRUVPhqZpyVtfG";
+
+      let stockData = [];
+
+      function showShop() {
+        document.getElementById("shop").style.display = "flex";
+        document.getElementById("orders").style.display = "none";
+      }
+
+      function showOrders() {
+        document.getElementById("shop").style.display = "none";
+        document.getElementById("orders").style.display = "block";
+      }
+
+      function filterItems() {
+        const query = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const cards = document.querySelectorAll(".card");
+        cards.forEach((card) => {
+          const name = card.querySelector("h3").textContent.toLowerCase();
+          card.style.display = name.includes(query) ? "block" : "none";
+        });
+      }
+
+      function loadStock() {
+        fetch(stockURL)
+          .then((res) => res.text())
+          .then((text) => {
+            const rows = text.split("\n").slice(1);
+            const shop = document.getElementById("shop");
+            shop.innerHTML = "";
+            rows.forEach((row) => {
+              const cols = row.split(",");
+              const id = cols[0];
+              const nom = cols[1];
+              const stock = cols[2];
+              const image = cols[16] || "https://via.placeholder.com/100";
+              const prix = cols[4] || "1";
+              if (nom && stock > 0) {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML = `
+                <img src="${image}" alt="${nom}">
+                <h3>${nom}</h3>
+                <p>Stock: ${stock}</p>
+                <p>Prix: ${prix} émeraude(s)</p>
+                <button onclick="commander('${id}','${nom}','${prix}')">Acheter</button>
+              `;
+                shop.appendChild(card);
+                stockData.push({ id, nom, prix });
+              }
+            });
+          });
+      }
+
+      function commander(id, nom, prix) {
+        const pseudo = prompt("Ton pseudo Minecraft ?");
+        const quartier = prompt("Ton quartier ?");
+        const description = prompt("Décris ta maison pour la livraison :");
+        const data = {
+          content: `Nouvelle commande de ${pseudo}\nItem: ${nom}\nPrix: ${prix} émeraude(s)\nQuartier: ${quartier}\nMaison: ${description}`,
+        };
+        fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        alert("Commande envoyée ! Merci.");
+      }
+
+      function checkOrders() {
+        const pseudo = document
+          .getElementById("pseudoInput")
+          .value.trim()
+          .toLowerCase();
+        if (!pseudo) return alert("Entre ton pseudo.");
+        fetch(statutURL)
+          .then((res) => res.text())
+          .then((text) => {
+            const rows = text.split("\n").slice(1);
+            const result = rows.filter((r) => r.toLowerCase().includes(pseudo));
+            const zone = document.getElementById("orderResults");
+            if (result.length === 0) {
+              zone.innerHTML = "<p>Aucune commande trouvée.</p>";
+            } else {
+              zone.innerHTML =
+                "<ul>" + result.map((r) => `<li>${r}</li>`).join("") + "</ul>";
+            }
+          });
+      }
+
+      loadStock();
+    </script>
+  </body>
+</html>

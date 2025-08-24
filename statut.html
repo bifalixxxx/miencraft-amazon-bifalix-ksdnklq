@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Statut des commandes - Amazon Minecraft</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+      }
+
+      header {
+        background-color: #1e293b;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+      }
+
+      .highlight {
+        color: orange;
+      }
+
+      main {
+        max-width: 600px;
+        margin: auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        margin-top: 2rem;
+      }
+
+      input,
+      button {
+        width: 100%;
+        padding: 0.8rem;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      button {
+        background-color: orange;
+        color: white;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      #result {
+        margin-top: 1rem;
+      }
+
+      ul {
+        padding-left: 1.2rem;
+      }
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1><span class="highlight">Amazon</span> Minecraft</h1>
+    </header>
+
+    <main>
+      <h2>🔍 Vérifie tes commandes</h2>
+      <input
+        id="pseudoInput"
+        type="text"
+        placeholder="Entre ton pseudo Minecraft"
+      />
+      <button onclick="checkOrders()">Afficher mes commandes</button>
+      <div id="result"></div>
+    </main>
+
+    <script>
+      const statutURL =
+        "https://docs.google.com/spreadsheets/d/TON_ID/export?format=csv";
+
+      function checkOrders() {
+        const pseudo = document
+          .getElementById("pseudoInput")
+          .value.trim()
+          .toLowerCase();
+
+        if (!pseudo) {
+          alert("Entre ton pseudo Minecraft !");
+          return;
+        }
+
+        fetch(statutURL)
+          .then((res) => res.text())
+          .then((text) => {
+            const rows = text.split("\n").slice(1); // skip header
+            const result = rows.filter((r) => r.toLowerCase().includes(pseudo));
+            const zone = document.getElementById("result");
+
+            if (result.length === 0) {
+              zone.innerHTML = "<p>Aucune commande trouvée.</p>";
+            } else {
+              const html = result
+                .map((r) => {
+                  const cols = r.split(",");
+                  return `<li>Commande #${cols[0]} — Livrée : ${cols[5]} — En retard : ${cols[6]}</li>`;
+                })
+                .join("");
+              zone.innerHTML = "<ul>" + html + "</ul>";
+            }
+          });
+      }
+    </script>
+  </body>
+</html>
